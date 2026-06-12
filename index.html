@@ -1,0 +1,570 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Психостоматологическая диагностика — метод Казакова</title>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg: #0f0f0f;
+  --bg2: #1a1a1a;
+  --bg3: #252525;
+  --border: rgba(255,255,255,0.07);
+  --border2: rgba(255,255,255,0.13);
+  --text: #f0ede8;
+  --text2: #888;
+  --text3: #555;
+  --accent: #FF5C35;
+  --spec-bg: #1c1c1c;
+  --client-bg: rgba(255,92,53,0.13);
+  --client-border: rgba(255,92,53,0.28);
+}
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  font-size: 15px;
+  line-height: 1.65;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+header {
+  padding: 14px 20px;
+  border-bottom: 0.5px solid var(--border);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-shrink: 0;
+}
+
+.dot { width: 9px; height: 9px; border-radius: 50%; background: var(--accent); flex-shrink: 0; }
+
+.logo { font-size: 13px; color: var(--text2); }
+.logo strong { color: var(--text); font-weight: 500; }
+
+.phase-pill {
+  margin-left: auto;
+  font-size: 11px;
+  color: var(--accent);
+  border: 0.5px solid rgba(255,92,53,0.3);
+  border-radius: 20px;
+  padding: 3px 10px;
+}
+
+.main {
+  display: flex;
+  flex: 1;
+  overflow: hidden;
+  gap: 0;
+}
+
+.panel-chat {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  border-right: 0.5px solid var(--border);
+  min-width: 0;
+}
+
+.panel-notes {
+  width: 280px;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  background: var(--bg2);
+}
+
+.panel-header {
+  padding: 10px 16px;
+  font-size: 11px;
+  color: var(--text3);
+  border-bottom: 0.5px solid var(--border);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.clear-btn {
+  background: none;
+  border: none;
+  color: var(--text3);
+  font-size: 11px;
+  cursor: pointer;
+  font-family: inherit;
+  padding: 0;
+}
+.clear-btn:hover { color: var(--accent); }
+
+#chat-area {
+  flex: 1;
+  overflow-y: auto;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.msg {
+  max-width: 86%;
+  padding: 10px 14px;
+  border-radius: 14px;
+  font-size: 15px;
+  line-height: 1.6;
+  white-space: pre-wrap;
+}
+
+.msg.spec {
+  background: var(--spec-bg);
+  border: 0.5px solid var(--border2);
+  align-self: flex-start;
+  border-bottom-left-radius: 4px;
+}
+
+.msg.client {
+  background: var(--client-bg);
+  border: 0.5px solid var(--client-border);
+  color: #ffcfbe;
+  align-self: flex-end;
+  border-bottom-right-radius: 4px;
+}
+
+.msg.system {
+  font-size: 11px;
+  color: var(--text3);
+  align-self: center;
+  background: none;
+  border: none;
+  padding: 2px 0;
+  font-style: italic;
+}
+
+#loading {
+  align-self: flex-start;
+  font-size: 13px;
+  color: var(--text3);
+  padding: 4px 14px;
+  display: none;
+  font-style: italic;
+}
+
+.typing::after {
+  content: '';
+  animation: dots 1.2s steps(3,end) infinite;
+}
+@keyframes dots {
+  0%   { content: ''; }
+  33%  { content: '.'; }
+  66%  { content: '..'; }
+  100% { content: '...'; }
+}
+
+.chat-footer {
+  padding: 12px 16px;
+  border-top: 0.5px solid var(--border);
+  flex-shrink: 0;
+}
+
+#input-wrap { display: flex; gap: 8px; align-items: flex-end; }
+
+#user-input {
+  flex: 1;
+  background: var(--bg3);
+  border: 0.5px solid var(--border2);
+  border-radius: 10px;
+  padding: 9px 12px;
+  color: var(--text);
+  font-size: 15px;
+  font-family: inherit;
+  resize: none;
+  min-height: 40px;
+  max-height: 100px;
+  overflow-y: auto;
+  outline: none;
+  transition: border-color 0.15s;
+}
+#user-input:focus { border-color: var(--accent); }
+#user-input::placeholder { color: var(--text3); }
+
+#send-btn {
+  background: var(--accent);
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  padding: 0 16px;
+  height: 40px;
+  font-size: 14px;
+  font-family: inherit;
+  font-weight: 500;
+  cursor: pointer;
+  white-space: nowrap;
+  flex-shrink: 0;
+  transition: opacity 0.15s;
+}
+#send-btn:hover { opacity: 0.85; }
+#send-btn:active { transform: scale(0.97); }
+#send-btn:disabled { opacity: 0.35; cursor: default; }
+
+.hint { font-size: 11px; color: var(--text3); margin-top: 6px; text-align: center; }
+
+#notes-area {
+  flex: 1;
+  overflow-y: auto;
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.note-item {
+  background: var(--bg3);
+  border: 0.5px solid var(--border);
+  border-radius: 8px;
+  padding: 8px 10px;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--text2);
+  position: relative;
+}
+
+.note-item .note-del {
+  position: absolute;
+  top: 6px; right: 8px;
+  background: none; border: none;
+  color: var(--text3); font-size: 14px;
+  cursor: pointer; line-height: 1;
+  padding: 0;
+}
+.note-item .note-del:hover { color: var(--accent); }
+
+.note-item .note-time {
+  font-size: 10px;
+  color: var(--text3);
+  margin-top: 4px;
+}
+
+.notes-input-wrap {
+  padding: 10px 14px;
+  border-top: 0.5px solid var(--border);
+  flex-shrink: 0;
+  display: flex;
+  gap: 6px;
+}
+
+#note-input {
+  flex: 1;
+  background: var(--bg3);
+  border: 0.5px solid var(--border2);
+  border-radius: 8px;
+  padding: 7px 10px;
+  color: var(--text);
+  font-size: 13px;
+  font-family: inherit;
+  resize: none;
+  min-height: 36px;
+  max-height: 80px;
+  outline: none;
+  transition: border-color 0.15s;
+}
+#note-input:focus { border-color: rgba(255,92,53,0.4); }
+#note-input::placeholder { color: var(--text3); }
+
+#note-btn {
+  background: var(--bg3);
+  border: 0.5px solid var(--border2);
+  border-radius: 8px;
+  color: var(--accent);
+  font-size: 18px;
+  width: 36px;
+  height: 36px;
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: background 0.15s;
+}
+#note-btn:hover { background: rgba(255,92,53,0.1); }
+
+.restart-btn {
+  background: none;
+  border: 0.5px solid var(--border2);
+  border-radius: 6px;
+  color: var(--text2);
+  font-size: 11px;
+  padding: 3px 8px;
+  cursor: pointer;
+  font-family: inherit;
+}
+.restart-btn:hover { border-color: var(--accent); color: var(--accent); }
+
+.notes-empty {
+  font-size: 12px;
+  color: var(--text3);
+  text-align: center;
+  margin-top: 20px;
+  font-style: italic;
+}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="dot"></div>
+  <div class="logo"><strong>Психостоматология №1</strong> — диагностика по методу Казакова</div>
+  <div class="phase-pill" id="phase-label">инициализация</div>
+  <button class="restart-btn" onclick="restart()" style="margin-left:8px;">↺ заново</button>
+</header>
+
+<div class="main">
+  <div class="panel-chat">
+    <div id="chat-area">
+      <div id="loading" class="typing">думает</div>
+    </div>
+    <div class="chat-footer">
+      <div id="input-wrap">
+        <textarea id="user-input" placeholder="Ваш ответ..." rows="1"></textarea>
+        <button id="send-btn" onclick="sendMsg()" disabled>Отправить</button>
+      </div>
+      <div class="hint">Enter — отправить · Shift+Enter — перенос</div>
+    </div>
+  </div>
+
+  <div class="panel-notes">
+    <div class="panel-header">
+      Заметки и ассоциации
+      <button class="clear-btn" onclick="clearNotes()">очистить</button>
+    </div>
+    <div id="notes-area">
+      <div class="notes-empty" id="notes-empty">Записывай идеи, образы,<br>что всплывает во время сессии</div>
+    </div>
+    <div class="notes-input-wrap">
+      <textarea id="note-input" placeholder="Мысль, образ, ассоциация..." rows="1"></textarea>
+      <button id="note-btn" onclick="addNote()" title="Добавить заметку">+</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const SYSTEM = `Ты проводишь психостоматологическую диагностику по методу Казакова. Ты — специалист, ведущий сессию.
+
+ТЕОРЕТИЧЕСКАЯ БАЗА (только внутри, клиенту не объяснять):
+- Зуб = отражение СП (довольного, живого, автономного человека в окружении клиента)
+- Разрушение зуба = отчуждение или очернение СП ради одобрения АЖ
+- Лечение зуба = навязывание СП "как правильно жить" — тоже АЖ-паттерн
+- Здоровый зуб = принятие СП без вмешательства
+- Кариес/скол/потемнение = внешний локус вины (он плохой)
+- Пародонт/киста/гранулема = внутренний локус (я плохой)
+- Гранулема = замороженный конфликт — изоляция без разрешения
+- АЖ = фигура манипуляции через страх/вину/долг
+- СП = живая автономная фигура которую клиент отвергает ради АЖ
+
+СКРИПТ (строго по этапам, один вопрос за раз):
+
+ЭТАП 1 — ВХОД:
+Скажи коротко, без лишнего тепла: "Назови зуб который беспокоит. Что с ним?"
+
+ЭТАП 2 — ВХОД В ОБРАЗ:
+После ответа скажи дословно:
+"Если бы у тебя был идеальный зуб, я бы спросил — он какой? И ты бы ответил: обычный. Но у тебя картина немного отклоняется от идеальной. Закрой глаза, сконцентрируйся на своём зубе и опиши его одним-двумя словами. Он какой?"
+
+ЭТАП 3 — ВОПРОСЫ О ЗУБЕ (по одному, без валидации, используй точные слова клиента):
+"Он меня..."
+"Он мне..."
+"Я не могу с ним..."
+"Я не хочу с ним..."
+"Мне нельзя с ним..."
+"Это из-за него мне так..."
+"Я ему..."
+"Я для него..."
+После каждого ответа — только следующий вопрос. Никаких "хорошо", "понятно", "спасибо".
+
+ЭТАП 4 — ТЕЛЕСНЫЙ ЯКОРЬ:
+"Раздается стук в дверь. Заходит [точные слова клиента о зубе]. Ты был спокоен — он появился — какая реакция рождается? Где в теле?"
+
+ЭТАП 5 — ОППОНЕНТ:
+"Сконцентрируйся на этом ощущении. Оно работает как магнит. Снова стук — заходят все, кто вызывает такое же ощущение. Кто приходит? Что они делают?"
+
+ЭТАП 6 — ЦЕЛЕВОЙ ПАТТЕРН:
+"Ещё один стук. Заходит твоя копия — и зуб у неё здоровый. Как она с ними? Какую потребность она может удовлетворить с ними — а ты нет?"
+
+ЭТАП 7 — ИНТЕРПРЕТАЦИЯ (только после этапа 6):
+Дай чёткую интерпретацию:
+— Тип поражения → локус вины
+— Кто оппонент (АЖ/СП/интроект)
+— Замороженный конфликт если есть
+— Проблемный паттерн коммуникации
+— Целевой паттерн
+Завершай не вопросом "как тебе это отзывается", а телесным наблюдением: "Где сейчас в теле что-то изменилось?"
+
+СТРОГИЕ ЗАПРЕТЫ:
+- Никогда: "спасибо что рассказал", "хорошо", "понятно", "как тебе это отзывается", "это важно"
+- Никакой валидации — она ставит в АЖ-позицию
+- Не объяснять теорию во время сессии
+- Только русский язык
+- Один вопрос за раз`;
+
+let history = [];
+let notes = [];
+
+const phaseMap = [
+  'вход', 'образ зуба', 'вопросы', 'вопросы', 'вопросы',
+  'вопросы', 'вопросы', 'вопросы', 'вопросы', 'вопросы',
+  'телесный якорь', 'определение оппонента', 'целевой паттерн', 'интерпретация'
+];
+let phaseIdx = 0;
+
+function setPhase(label) {
+  document.getElementById('phase-label').textContent = label;
+}
+
+function addMsg(role, text) {
+  const area = document.getElementById('chat-area');
+  const loading = document.getElementById('loading');
+  const div = document.createElement('div');
+  div.className = 'msg ' + (role === 'assistant' ? 'spec' : role === 'user' ? 'client' : 'system');
+  div.textContent = text;
+  area.insertBefore(div, loading);
+  area.scrollTop = area.scrollHeight;
+}
+
+async function callClaude(userMsg) {
+  history.push({ role: 'user', content: userMsg });
+  const loading = document.getElementById('loading');
+  const btn = document.getElementById('send-btn');
+  loading.style.display = 'block';
+  btn.disabled = true;
+
+  try {
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-6',
+        max_tokens: 1000,
+        system: SYSTEM,
+        messages: history
+      })
+    });
+    const data = await res.json();
+    const reply = data.content?.[0]?.text || 'Ошибка API.';
+    history.push({ role: 'assistant', content: reply });
+    loading.style.display = 'none';
+    btn.disabled = false;
+    phaseIdx = Math.min(phaseIdx + 1, phaseMap.length - 1);
+    setPhase(phaseMap[phaseIdx]);
+    return reply;
+  } catch(e) {
+    loading.style.display = 'none';
+    btn.disabled = false;
+    return 'Ошибка соединения. Попробуй ещё раз.';
+  }
+}
+
+async function sendMsg() {
+  const input = document.getElementById('user-input');
+  const text = input.value.trim();
+  if (!text) return;
+  input.value = '';
+  input.style.height = 'auto';
+  addMsg('user', text);
+  const reply = await callClaude(text);
+  addMsg('assistant', reply);
+}
+
+document.getElementById('user-input').addEventListener('keydown', function(e) {
+  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMsg(); }
+  setTimeout(() => {
+    this.style.height = 'auto';
+    this.style.height = Math.min(this.scrollHeight, 100) + 'px';
+  }, 0);
+});
+
+document.getElementById('user-input').addEventListener('input', function() {
+  document.getElementById('send-btn').disabled = this.value.trim().length === 0;
+});
+
+document.getElementById('note-input').addEventListener('keydown', function(e) {
+  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); addNote(); }
+  setTimeout(() => {
+    this.style.height = 'auto';
+    this.style.height = Math.min(this.scrollHeight, 80) + 'px';
+  }, 0);
+});
+
+function addNote() {
+  const input = document.getElementById('note-input');
+  const text = input.value.trim();
+  if (!text) return;
+  input.value = '';
+  input.style.height = 'auto';
+
+  const id = Date.now();
+  notes.push({ id, text, time: new Date().toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' }) });
+  renderNotes();
+}
+
+function deleteNote(id) {
+  notes = notes.filter(n => n.id !== id);
+  renderNotes();
+}
+
+function clearNotes() {
+  notes = [];
+  renderNotes();
+}
+
+function renderNotes() {
+  const area = document.getElementById('notes-area');
+  const empty = document.getElementById('notes-empty');
+  if (notes.length === 0) {
+    area.innerHTML = '';
+    const e = document.createElement('div');
+    e.className = 'notes-empty';
+    e.id = 'notes-empty';
+    e.innerHTML = 'Записывай идеи, образы,<br>что всплывает во время сессии';
+    area.appendChild(e);
+    return;
+  }
+  area.innerHTML = '';
+  notes.slice().reverse().forEach(n => {
+    const div = document.createElement('div');
+    div.className = 'note-item';
+    div.innerHTML = `<button class="note-del" onclick="deleteNote(${n.id})">×</button><div>${escHtml(n.text)}</div><div class="note-time">${n.time}</div>`;
+    area.appendChild(div);
+  });
+}
+
+function escHtml(s) {
+  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+async function restart() {
+  history = [];
+  phaseIdx = 0;
+  notes = [];
+  renderNotes();
+  const area = document.getElementById('chat-area');
+  const loading = document.getElementById('loading');
+  Array.from(area.children).forEach(c => { if (c !== loading) c.remove(); });
+  setPhase('инициализация');
+  await init();
+}
+
+async function init() {
+  const opening = await callClaude('Начни диагностическую сессию — попроси назвать зуб и что с ним.');
+  addMsg('assistant', opening);
+  setPhase('описание зуба');
+  document.getElementById('send-btn').disabled = false;
+}
+
+init();
+</script>
+</body>
+</html>
