@@ -311,6 +311,48 @@ header {
   margin-top: 20px;
   font-style: italic;
 }
+
+@media (max-width: 600px) {
+  header {
+    padding: 10px 14px;
+    gap: 8px;
+  }
+  .logo { font-size: 12px; }
+  .logo strong { display: block; }
+  .phase-pill { display: none; }
+  .restart-btn { font-size: 10px; padding: 3px 6px; }
+
+  .main { flex-direction: column; }
+
+  .panel-chat {
+    flex: 1;
+    border-right: none;
+    border-bottom: 0.5px solid var(--border);
+    min-height: 0;
+  }
+
+  .panel-notes {
+    width: 100%;
+    max-height: 200px;
+    border-top: 0.5px solid var(--border);
+  }
+
+  #notes-area { padding: 8px 12px; }
+
+  .notes-input-wrap { padding: 8px 12px; }
+
+  .msg { max-width: 92%; font-size: 16px; }
+
+  #chat-area { padding: 12px; gap: 8px; }
+
+  #user-input { font-size: 16px; }
+
+  #send-btn { padding: 0 14px; font-size: 15px; }
+
+  .hint { display: none; }
+
+  #finish-btn { display: none; }
+}
 </style>
 </head>
 <body>
