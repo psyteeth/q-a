@@ -449,9 +449,9 @@ async function callClaude(userMsg) {
   btn.disabled = true;
 
   try {
-    const res = await fetch('https://api.anthropic.com/v1/messages', {
+    const res = await fetch('https://tight-morning-d723.rfwwt5v2c7.workers.dev/', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', 'x-action': 'claude' },
       body: JSON.stringify({
         model: 'claude-sonnet-4-6',
         max_tokens: 500,
@@ -620,7 +620,7 @@ async function finishSession(reason) {
   try {
     const resp = await fetch(SHEETS_URL, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', 'x-action': 'save' },
       body: payload
     });
     const result = await resp.json();
