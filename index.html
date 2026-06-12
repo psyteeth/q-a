@@ -320,6 +320,7 @@ header {
   <div class="logo"><strong>Психостоматология №1</strong> — диагностика по методу Казакова</div>
   <div class="phase-pill" id="phase-label">инициализация</div>
   <button class="restart-btn" onclick="restart()" style="margin-left:8px;">↺ заново</button>
+  <button class="restart-btn" id="finish-btn" onclick="finishSession('manual')" style="margin-left:4px; border-color:rgba(255,92,53,0.4); color:var(--accent);">✓ завершить</button>
 </header>
 
 <div class="main">
@@ -394,14 +395,20 @@ const SYSTEM = `Ты проводишь психостоматологическ
 ЭТАП 6 — ЦЕЛЕВОЙ ПАТТЕРН:
 "Ещё один стук. Заходит твоя копия — и зуб у неё здоровый. Как она с ними? Какую потребность она может удовлетворить с ними — а ты нет?"
 
-ЭТАП 7 — ИНТЕРПРЕТАЦИЯ (только после этапа 6):
-Дай чёткую интерпретацию:
-— Тип поражения → локус вины
-— Кто оппонент (АЖ/СП/интроект)
-— Замороженный конфликт если есть
-— Проблемный паттерн коммуникации
-— Целевой паттерн
-Завершай не вопросом "как тебе это отзывается", а телесным наблюдением: "Где сейчас в теле что-то изменилось?"
+ЭТАП 7 — УДАРЫ (только после этапа 6):
+НЕ давай интерпретацию. Не объясняй. Не подводи итоги.
+Задай 3-4 коротких вопроса про конкретного оппонента из этапа 5 — по одному, с паузой.
+Вопросы должны попадать в живое место. Примеры (адаптируй под слова клиента):
+"Он тебя ждал?"
+"Он вообще заметил?"
+"Ты бы хотел чтобы он попросил?"
+"Он знает что ты стараешься?"
+"Тебе было бы легче если бы он видел?"
+"Ты делал это для него или для себя?"
+"Ты сейчас злишься или устал?"
+Каждый вопрос — отдельное сообщение. Жди ответа или молчания.
+После последнего вопроса — только одно предложение: "Это твой зуб и знает."
+Больше ничего. Никаких выводов. Клиент уносит вопросы с собой."
 
 СТРОГИЕ ЗАПРЕТЫ:
 - Никогда: "спасибо что рассказал", "хорошо", "понятно", "как тебе это отзывается", "это важно"
@@ -447,13 +454,14 @@ async function callClaude(userMsg) {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         model: 'claude-sonnet-4-6',
-        max_tokens: 1000,
+        max_tokens: 500,
         system: SYSTEM,
         messages: history
       })
     });
     const data = await res.json();
-    const reply = data.content?.[0]?.text || 'Ошибка API.';
+    if (data.error) throw new Error(data.error.message || 'API error');
+    const reply = data.content?.[0]?.text || 'Нет ответа.';
     history.push({ role: 'assistant', content: reply });
     loading.style.display = 'none';
     btn.disabled = false;
@@ -563,6 +571,80 @@ async function init() {
   setPhase('описание зуба');
   document.getElementById('send-btn').disabled = false;
 }
+
+
+const SHEETS_URL = 'https://tight-morning-d723.rfwwt5v2c7.workers.dev/';
+let sessionStart = new Date();
+let saved = false;
+
+function buildDialogText() {
+  const msgs = document.querySelectorAll('.msg.spec, .msg.client');
+  const lines = Array.from(msgs).map(m => {
+    const role = m.classList.contains('spec') ? 'С' : 'К';
+    return role + ': ' + m.textContent.slice(0, 200);
+  });
+  const full = lines.join(' | ');
+  return full.slice(0, 1500); // stay under URL limit
+}
+
+function extractTooth() {
+  const first = document.querySelector('.msg.client');
+  return first ? first.textContent.slice(0, 80) : '';
+}
+
+function buildNotesText() {
+  return notes.map(n => n.time + ' — ' + n.text).join('\n');
+}
+
+async function finishSession(reason) {
+  if (saved) return;
+  if (history.length < 2) return;
+  saved = true;
+
+  const btn = document.getElementById('finish-btn');
+  if (btn) { btn.textContent = '⏳ сохраняю...'; btn.disabled = true; }
+
+  const now = new Date();
+  const payload = JSON.stringify({
+    date: now.toLocaleDateString('ru-RU'),
+    time: now.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' }),
+    tooth: extractTooth(),
+    duration: Math.round((now - sessionStart) / 60000),
+    phase: document.getElementById('phase-label').textContent,
+    dialog: buildDialogText(),
+    notes: buildNotesText(),
+    reason: reason === 'manual' ? 'завершено вручную' : 'закрытие вкладки'
+  });
+
+  // POST to Cloudflare Worker which proxies to Apps Script
+  try {
+    const resp = await fetch(SHEETS_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: payload
+    });
+    const result = await resp.json();
+    if (btn) { btn.textContent = result.status === 'saved' ? '✓ сохранено' : '✓ отправлено'; }
+  } catch(e) {
+    if (btn) { btn.textContent = '✗ ошибка сети'; btn.disabled = false; saved = false; }
+  }
+}
+
+window.addEventListener('beforeunload', () => {
+  if (history.length >= 2 && !saved) {
+    const payload = JSON.stringify({
+      date: new Date().toLocaleDateString('ru-RU'),
+      time: new Date().toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' }),
+      tooth: extractTooth(),
+      duration: Math.round((new Date() - sessionStart) / 60000),
+      phase: document.getElementById('phase-label').textContent,
+      dialog: buildDialogText(),
+      notes: buildNotesText(),
+      reason: 'закрытие вкладки'
+    });
+    navigator.sendBeacon(SHEETS_URL, new Blob([payload], {type: 'application/json'}));
+  }
+});
 
 init();
 </script>
