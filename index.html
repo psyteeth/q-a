@@ -504,6 +504,8 @@ async function callClaude(userMsg) {
     btn.disabled = false;
     phaseIdx = Math.min(phaseIdx + 1, phaseMap.length - 1);
     setPhase(phaseMap[phaseIdx]);
+    // Auto-save silently after every exchange
+    autoSave();
     return { ok: true, reply };
   } catch(e) {
     loading.style.display = 'none';
@@ -623,6 +625,27 @@ async function init() {
 
 
 const SHEETS_URL = 'https://tight-morning-d723.rfwwt5v2c7.workers.dev/';
+
+function autoSave() {
+  if (history.length < 2) return;
+  const now = new Date();
+  const payload = JSON.stringify({
+    date: now.toLocaleDateString('ru-RU'),
+    time: now.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' }),
+    tooth: extractTooth(),
+    duration: Math.round((now - sessionStart) / 60000),
+    phase: document.getElementById('phase-label').textContent,
+    dialog: buildDialogText(),
+    notes: buildNotesText(),
+    reason: 'автосохранение'
+  });
+  // Fire and forget - no await, no UI update
+  fetch(SHEETS_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'x-action': 'save' },
+    body: payload
+  }).catch(() => {});
+}
 let sessionStart = new Date();
 let saved = false;
 
