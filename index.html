@@ -471,14 +471,17 @@ function addMsg(role, text) {
   div.textContent = text;
   area.insertBefore(div, loading);
   area.scrollTop = area.scrollHeight;
+  return div;
 }
 
 async function callClaude(userMsg) {
-  history.push({ role: 'user', content: userMsg });
+  // Push to history only after success - prevent duplicates on retry
   const loading = document.getElementById('loading');
   const btn = document.getElementById('send-btn');
   loading.style.display = 'block';
   btn.disabled = true;
+
+  const msgToSend = [...history, { role: 'user', content: userMsg }];
 
   try {
     const res = await fetch('https://tight-morning-d723.rfwwt5v2c7.workers.dev/', {
@@ -488,22 +491,24 @@ async function callClaude(userMsg) {
         model: 'claude-sonnet-4-6',
         max_tokens: 500,
         system: SYSTEM,
-        messages: history
+        messages: msgToSend
       })
     });
     const data = await res.json();
     if (data.error) throw new Error(data.error.message || 'API error');
     const reply = data.content?.[0]?.text || 'Нет ответа.';
+    // Only commit to history on success
+    history.push({ role: 'user', content: userMsg });
     history.push({ role: 'assistant', content: reply });
     loading.style.display = 'none';
     btn.disabled = false;
     phaseIdx = Math.min(phaseIdx + 1, phaseMap.length - 1);
     setPhase(phaseMap[phaseIdx]);
-    return reply;
+    return { ok: true, reply };
   } catch(e) {
     loading.style.display = 'none';
     btn.disabled = false;
-    return 'Ошибка соединения. Попробуй ещё раз.';
+    return { ok: false, reply: null };
   }
 }
 
@@ -513,9 +518,21 @@ async function sendMsg() {
   if (!text) return;
   input.value = '';
   input.style.height = 'auto';
-  addMsg('user', text);
-  const reply = await callClaude(text);
-  addMsg('assistant', reply);
+
+  const userDiv = addMsg('user', text);
+  const result = await callClaude(text);
+
+  if (result.ok) {
+    addMsg('assistant', result.reply);
+  } else {
+    // Remove user message and restore input so they can retry
+    userDiv.remove();
+    input.value = text;
+    input.style.height = 'auto';
+    input.style.height = Math.min(input.scrollHeight, 100) + 'px';
+    const errDiv = addMsg('system', '⚠︎ нет связи — попробуй ещё раз');
+    setTimeout(() => errDiv.remove(), 3000);
+  }
 }
 
 document.getElementById('user-input').addEventListener('keydown', function(e) {
@@ -598,8 +615,8 @@ async function restart() {
 }
 
 async function init() {
-  const opening = await callClaude('Начни диагностическую сессию — попроси назвать зуб и что с ним.');
-  addMsg('assistant', opening);
+  const result = await callClaude('Начни диагностическую сессию — попроси назвать зуб и что с ним.');
+  if (result.ok) addMsg('assistant', result.reply);
   setPhase('описание зуба');
   document.getElementById('send-btn').disabled = false;
 }
